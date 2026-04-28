@@ -1,0 +1,979 @@
+openapi: 3.0.3
+
+info:
+  title: Final Project API
+  version: 1.0.0
+  description: API documentation for Final Project API
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: Auth
+    description: User authentication endpoints
+  - name: Workouts
+    description: Workout related endpoints
+  - name: Exercises
+    description: Exercise related endpoints
+  - name: Logs
+    description: Log related endpoints
+
+paths:
+  /workouts:
+    get:
+      tags:
+        - Workouts
+      summary: Get all workouts
+      description: Retrieve a list of all workouts with optional filtering and sorting.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Filter workouts containing this keyword
+          schema:
+            type: string
+            example: Push
+
+        - name: sortBy
+          in: query
+          required: false
+          description: Field to sort results by 
+          schema:
+            type: string
+            example: userId
+
+        - name: order
+          in: query
+          required: false
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: desc
+
+        - name: offset
+          in: query
+          required: false
+          description: Number of items to skip
+          schema:
+            type: integer
+            example: 0
+
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of workouts to return
+          schema:
+            type: integer
+            example: 10
+
+      responses:
+        '200':
+          description: A list of workouts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Workout'
+        '400':
+          description: Bad request due to invalid data
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                properties: 
+                  errors: 
+                    type: array
+                    items:
+                      type: string
+                example: 
+                  errors: 
+                    ["sortBy must be one of id, name, userId"]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Workouts
+      summary: Create a new workout
+      description: Create a new workout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - exercises
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                exercises:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      exerciseId:
+                        type: integer
+                      sets:
+                        type: integer
+                      reps:
+                        type: integer
+            example:
+              name: "Full Body Blast"
+              description: "A quick circuit"
+              exercises:
+                - exerciseId: 1
+                  sets: 3
+                  reps: 12
+                - exerciseId: 2
+                  sets: 3
+                  reps: 10
+      responses:
+        '201':
+          description: Workout successfully created
+        '400':
+          $ref: '#/components/responses/InvalidWorkoutInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /workouts/{id}:
+    get:
+      tags:
+        - Workouts
+      summary: Get a workout by ID
+      description: Retrieve a workout by ID.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A single workout
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Workout'
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Workouts
+      summary: Update a workout
+      description: Update name, and/or description of an workout.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - exercises
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                exercises:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      exerciseId:
+                        type: integer
+                      sets:
+                        type: integer
+                      reps:
+                        type: integer
+            example:
+              name: "Full Body Blast"
+              description: "A quick circuit"
+              exercises:
+                - exerciseId: 1
+                  sets: 3
+                  reps: 12
+                - exerciseId: 2
+                  sets: 3
+                  reps: 10
+      responses:
+        '201':
+          description: Workout updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '400':
+          description: Bad request due to invalid data
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                properties: 
+                  errors: 
+                    type: array
+                    items:
+                      type: string
+                example: 
+                  errors:
+                    - 'Name must be at least 2 characters' 
+                    - 'MuscleGroup must be included'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Workouts
+      summary: Delete an workout
+      description: Delete an workout by ID.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '204':
+          description: Workout deleted successfully
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /exercises:
+    get:
+      tags:
+        - Exercises
+      summary: Get all exercises
+      description: Retrieve a list of all exercises with optional filtering and sorting.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Filter exercises containing this keyword
+          schema:
+            type: string
+            example: Bench
+
+        - name: sortBy
+          in: query
+          required: false
+          description: Field to sort results by 
+          schema:
+            type: string
+            example: muscleGroup
+
+        - name: order
+          in: query
+          required: false
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: desc
+
+        - name: offset
+          in: query
+          required: false
+          description: Number of items to skip
+          schema:
+            type: integer
+            example: 0
+
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of exercises to return
+          schema:
+            type: integer
+            example: 10
+
+      responses:
+        '200':
+          description: A list of exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Exercise'
+        '400':
+          description: Bad request due to invalid data
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                properties: 
+                  errors: 
+                    type: array
+                    items:
+                      type: string
+                example: 
+                  errors: 
+                    ["sortBy must be one of id, name, muscleGroup"]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Exercises
+      summary: Create a new exercise
+      description: Create a new exercise.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Exercise'
+      responses:
+        '201':
+          description: Exercise successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '400':
+          $ref: '#/components/responses/InvalidExerciseInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+
+  /exercises/{id}:
+    get:
+      tags:
+        - Exercises
+      summary: Get an exercise by ID
+      description: Retrieve an exercise by ID.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A single exercise
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Exercise'
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Exercises
+      summary: Update an exercise
+      description: Update name, muscle group, and/or description of an exercise.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Exercise'
+      responses:
+        '201':
+          description: Exercise updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '400':
+          description: Bad request due to invalid data or invalid ID
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                properties: 
+                  errors: 
+                    type: array
+                    items:
+                      type: string
+                example: 
+                  errors:
+                    - 'Name must be at least 2 characters' 
+                    - 'MuscleGroup must be included'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Exercises
+      summary: Delete an exercise
+      description: Delete an exercise by ID.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '204':
+          description: Exercise deleted successfully
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /logs:
+    get:
+      tags:
+        - Logs
+      summary: Get all logs
+      description: Retrieve a list of all logs with optional filtering and sorting.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sortBy
+          in: query
+          required: false
+          description: Field to sort results by 
+          schema:
+            type: string
+            example: id
+
+        - name: order
+          in: query
+          required: false
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: desc
+
+        - name: offset
+          in: query
+          required: false
+          description: Number of items to skip
+          schema:
+            type: integer
+            example: 0
+
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of logs to return
+          schema:
+            type: integer
+            example: 10
+
+      responses:
+        '200':
+          description: A list of logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+        '400':
+          description: Bad request due to invalid data
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                properties: 
+                  errors: 
+                    type: array
+                    items:
+                      type: string
+                example: 
+                  errors: 
+                    ["sortBy must be one of id, userId, workoutId, date"]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Logs
+      summary: Create a new log
+      description: Create a new log.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - workoutId
+              properties:
+                workoutId:
+                  type: integer
+              example:
+                workoutId: 1
+      responses:
+        '201':
+          description: Log successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Log'
+        '400':
+          $ref: '#/components/responses/InvalidLogInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /logs/{id}:
+    get:
+      tags:
+        - Logs
+      summary: Get a log by ID
+      description: Retrieve a log by ID.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A single log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Logs
+      summary: Update a log
+      description: Update workout ID of an log.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - workoutId
+              properties:
+                workoutId:
+                  type: integer
+              example:
+                workoutId: 1
+      responses:
+        '201':
+          description: Log updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Log'
+        '400':
+          description: Bad request due to invalid data or invalid ID
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                properties: 
+                  errors: 
+                    type: array
+                    items:
+                      type: string
+                example: 
+                  errors:
+                    - 'Id must be a positive number' 
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Logs
+      summary: Delete an log
+      description: Delete an log by ID.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '204':
+          description: Log deleted successfully
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/signup:
+    post:
+      tags:
+        - Auth
+      summary: Register user
+      description: Create a new user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentials'
+            example:
+              username: "sampleuser"
+              password: "password123"
+      responses:
+        '201':
+          $ref: '#/components/responses/CreatedSuccessfully'
+          
+        '400':
+          $ref: '#/components/responses/InvalidUserInput'
+
+        '409':
+          $ref: '#/components/responses/DuplicateUsername'
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Authenticate user
+      description: Authenticate a user and return an access token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentials'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    example: 'gO2LpizXecvG4waCdyL25aZ...'
+        '400':
+          $ref: '#/components/responses/InvalidUserInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    AuthCredentials:
+      type: object
+      properties:
+        username:
+          type: string
+          example: 'admin_joe' 
+        password:
+          type: string
+          example: 'admin123'
+
+    Workout:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: 'Push Day'
+        description:
+          type: string
+          example: 'A workout targeting chest and triceps'
+        userId:
+          type: integer
+          readOnly: true
+          example: 1
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercise'
+
+    WorkoutExercise:
+        type: object
+        properties:
+          exerciseId:
+            type: integer
+            example: 5
+          exerciseName:
+            type: string
+            example: 'Bench Press'
+          sets:
+            type: integer
+            example: 3
+          reps:
+            type: integer
+            example: 10
+
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: 'Bench Press'
+        muscleGroup:
+          type: string
+          example: 'Chest'
+        description:
+          type: string
+          example: 'Lay back on bench and push the weight up.'
+
+    Log:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        userId:
+          type: integer
+          readOnly: true
+          example: 2
+        workoutId:
+          type: integer
+          readOnly: true
+          example: 1
+        date:
+          type: string
+          readOnly: true
+          example: '2026-04-27T20:30:00Z'
+          
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        username: 
+          type: string
+          example: 'sampleuser'
+        password:
+          type: string
+          example: 'password123'
+        createdAt:
+          type: string
+          readOnly: true
+          example: '2026-01-01T10:20:00Z'
+  
+  responses:
+    CreatedSuccessfully:
+      description: Sign up successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id:
+                type: integer
+              username:
+                type: string
+              createdAt: 
+                type: string
+          example:
+            id: 3
+            username: "sampleuser"
+            role: "USER"
+            createdAt: "2026-04-28T01:56:51.159Z"
+
+    NotFound: 
+      description: Resource not found 
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              error: 
+                type: string 
+            example: 
+              error: 'Resource 1 not found'
+
+    InvalidId:
+      description: Invalid ID
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              errors: 
+                type: array 
+                items: 
+                  type: string 
+            example: 
+              errors: ["Id must be a positive integer"]
+
+    Unauthorized:
+      description: Client is not authenticated
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              error: 
+                type: string 
+            example: 
+              error: 'Not authenticated. Please provide a valid token.'
+
+    Forbidden:
+      description: Client is not authorized
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              error: 
+                type: string 
+            example: 
+              error: 'Forbidden: insufficient permission'
+
+    InvalidUserInput:
+      description: Bad request due to invalid data
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              errors: 
+                type: array
+                items:
+                  type: string
+            example: 
+              errors:
+                - 'Username is required' 
+                - 'Password is required'
+
+    DuplicateUsername: 
+      description: Duplicate Username
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              error: 
+                type: string 
+            example: 
+              error: 'Username has already been used'
+
+    InvalidWorkoutInput:
+      description: Invalid workout data
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              errors: 
+                type: array 
+                items: 
+                  type: string 
+            example: 
+              errors: 
+              - 'Name must be at least 2 characters'
+
+    InvalidExerciseInput:
+      description: Invalid exercise data
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              errors: 
+                type: array 
+                items: 
+                  type: string 
+            example: 
+              errors: 
+              - 'Name must be at least 2 characters'
+
+    InvalidLogInput:
+      description: Invalid log data
+      content: 
+        application/json: 
+          schema: 
+            type: object 
+            properties: 
+              errors: 
+                type: array 
+                items: 
+                  type: string 
+            example: 
+              errors: 
+              - 'workoutId is required'
+
+  parameters:
+    ResourceId:
+      description: Resource ID
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 1
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
