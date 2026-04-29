@@ -6,7 +6,10 @@ info:
   description: API documentation for Final Project API
 
 servers:
+  - url: https://final-project-t9ch.onrender.com/api
+    description: production server
   - url: http://localhost:8080/api
+    description: local server
 
 tags:
   - name: Auth
